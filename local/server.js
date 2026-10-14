@@ -82,10 +82,15 @@ const server = https.createServer(tls, async (req, res) => {
     res.writeHead(204).end();
     return;
   }
-  if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-    fs.createReadStream(path.join(DIR, "public", "index.html")).pipe(res);
-    return;
+  if (req.method === "GET") {
+    const rel = url.pathname === "/" ? "index.html" : decodeURIComponent(url.pathname).replace(/^\/+/, "");
+    const file = path.join(DIR, "..", "docs", rel);
+    if (file.startsWith(path.join(DIR, "..", "docs") + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
+      const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".gz": "application/gzip" };
+      res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream", "Cache-Control": rel.startsWith("vendor/") ? "public, max-age=86400" : "no-store" });
+      fs.createReadStream(file).pipe(res);
+      return;
+    }
   }
   res.writeHead(404).end("Not found");
 });

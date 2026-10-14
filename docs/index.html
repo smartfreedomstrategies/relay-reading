@@ -1,0 +1,511 @@
+<title>Relay Reading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: one calm reading column. Top bar shows who is here, the article is split into
+   sections owned by a reader, a bottom bar holds the one action that matters right now. */
+:root {
+  --bg: #f4f7f6;
+  --surface: #ffffff;
+  --fg: #14211f;
+  --muted: #5d6f6b;
+  --line: #d9e2df;
+  --mark: #ffd24a;
+  --mark-fg: #1d1700;
+  --c0: #0b7a89;
+  --c1: #5148d4;
+  --c2: #b02a6e;
+  --ok: #1f9d6b;
+  --font-ui: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-read: "Newsreader", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1514; --surface: #162120; --fg: #e6eeec; --muted: #8da29d; --line: #25332f;
+    --mark: #f2c230; --mark-fg: #181200;
+    --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --ok: #46d19a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1514; --surface: #162120; --fg: #e6eeec; --muted: #8da29d; --line: #25332f;
+  --mark: #f2c230; --mark-fg: #181200;
+  --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --ok: #46d19a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui);
+  padding-inline: 16px; padding-block: 0 140px; font-size: 15px; line-height: 1.45;
+}
+.wrap { max-width: 720px; margin-inline: auto; }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  margin-inline: -16px; padding: 12px 16px;
+}
+.top-in { max-width: 720px; margin-inline: auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.brand { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.brand small { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+.roster { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 8px; border: 1px solid var(--line); border-radius: 99px; font-size: 13px; background: var(--surface); }
+.pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); opacity: .35; }
+.pill.here i { opacity: 1; }
+.pill.me { border-color: var(--c); font-weight: 700; }
+
+.join { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 18px 0 6px; }
+.join label { font-weight: 700; }
+select, button { font: inherit; }
+select {
+  min-height: 42px; padding: 0 36px 0 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); min-width: 200px;
+}
+select:focus-visible, button:focus-visible { outline: 3px solid var(--c1); outline-offset: 2px; }
+
+h1 { font-family: var(--font-read); font-weight: 500; font-size: clamp(30px, 6vw, 44px); line-height: 1.1; letter-spacing: -0.015em; margin: 22px 0 6px; text-wrap: balance; }
+.byline { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 22px; }
+
+.sec { --c: var(--c0); display: grid; grid-template-columns: 1fr; gap: 8px; padding: 18px 0 20px 18px; border-left: 3px solid var(--line); opacity: .62; transition: opacity .3s, border-color .3s; }
+.sec[data-i="1"] { --c: var(--c1); }
+.sec[data-i="2"] { --c: var(--c2); }
+.sec.active { opacity: 1; border-left-color: var(--c); }
+.sec.done { opacity: .9; border-left-color: var(--c); }
+.sec-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.sec-head b { color: var(--c); font-weight: 700; }
+.state { margin-left: auto; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line); text-transform: none; letter-spacing: 0; font-size: 12px; background: var(--surface); }
+.state.live { border-color: var(--c); color: var(--c); font-weight: 700; }
+.state.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-right: 6px; animation: pulse 1.1s ease-in-out infinite; }
+.state.turn { background: var(--c); color: var(--bg); border-color: var(--c); font-weight: 700; }
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+
+.txt { font-family: var(--font-read); font-size: clamp(21px, 3.6vw, 26px); line-height: 1.6; margin: 0; max-width: 62ch; color: var(--muted); }
+.sec.active .txt { color: var(--fg); }
+.w { padding: 1px 0; border-radius: 4px; }
+.w.read { color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
+.w.cur { background: var(--mark); color: var(--mark-fg); box-shadow: 0 0 0 3px var(--mark); }
+
+.mic { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--mark); border-radius: 8px; background: var(--surface); }
+.mic > div { min-width: 0; flex: 1 1 240px; }
+.mic-sub { color: var(--muted); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
+.mic.on { border-left-color: var(--ok); }
+.mic.blocked { border-left-color: var(--c2); }
+.bar {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.bar-in { max-width: 720px; margin-inline: auto; display: grid; gap: 8px; }
+.msg { font-weight: 700; min-height: 1.4em; }
+.sub { color: var(--muted); font-size: 13px; min-height: 1.3em; overflow-wrap: anywhere; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button {
+  min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--fg); font-weight: 700; cursor: pointer;
+}
+button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:disabled { opacity: .4; cursor: default; }
+button.quiet { font-weight: 500; color: var(--muted); margin-left: auto; }
+@media (prefers-reduced-motion: reduce) { .state.live::before { animation: none; } * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">Relay Reading<small>concept</small></div>
+    <div class="roster" id="roster" aria-label="Readers"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="join">
+    <label for="who">Who are you?</label>
+    <select id="who">
+      <option value="">Choose your name…</option>
+      <option value="Ava">Ava (section 1)</option>
+      <option value="Ben">Ben (section 2)</option>
+      <option value="Cleo">Cleo (section 3)</option>
+      <option value="__listener">Just listening</option>
+    </select>
+  </div>
+
+  <div class="mic" id="micCard">
+    <div>
+      <strong id="micTitle">Microphone is off</strong>
+      <div class="mic-sub" id="micSub">Relay Reading listens to your voice to light up the words. Nothing is recorded.</div>
+      <div class="mic-sub"><label for="engine">Voice engine </label>
+        <select id="engine">
+          <option value="local">Private, runs on this device</option>
+          <option value="chrome">Chrome built-in (sends audio to Google)</option>
+        </select>
+        &nbsp; <label for="lead">Marker </label>
+        <select id="lead">
+          <option value="0">on the next word</option>
+          <option value="1" selected>one word ahead</option>
+          <option value="2">two words ahead</option>
+        </select>
+      </div>
+    </div>
+    <button id="btnEnable" class="primary">Enable microphone</button>
+  </div>
+
+  <h1>Why We Read Aloud</h1>
+  <p class="byline">Three readers · three sections · one voice at a time</p>
+  <div id="article"></div>
+</main>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="msg" id="msg">Pick your name to join the reading.</div>
+    <div class="sub" id="sub"></div>
+    <div class="btns">
+      <button class="primary" id="btnMic" hidden>Start reading</button>
+      <button id="btnSim" hidden>Demo voice</button>
+      <button id="btnStop" hidden>Stop</button>
+      <button id="btnPass" class="primary" hidden>Pass on</button>
+      <button class="quiet" id="btnReset">Restart for everyone</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROSTER = ["Ava", "Ben", "Cleo"];
+const TEXT = [
+  "Long before printing presses, stories travelled by voice. A reader would stand before a room and give the words their rhythm, their pauses, their weight. Everyone listened, and for a while the room felt like one mind.",
+  "Today we read alone, in silence, on glowing screens. The words arrive faster than ever, yet something is missing. A sentence read aloud slows down, and slowing down is how ideas finally sink in.",
+  "So pass the page around. One person starts, the next takes over where the last voice fades, and the whole article becomes something you made together. Take a breath, and begin reading."
+];
+const WORDS = TEXT.map(t => t.split(/\s+/));
+const norm = w => w.toLowerCase().replace(/[^a-z0-9']/g, "");
+const $ = id => document.getElementById(id);
+
+let me = null;            // "Ava" | "Ben" | "Cleo" | "__listener" | null
+let prog = {};            // name -> {n, done, live}
+let room = null;
+let here = new Set();
+let mode = null;          // "mic" | "sim" | null
+let timer = null, rec = null;
+let lastActive = -2, lastAuto = -2, micOk = false;
+
+const P = name => prog[name] || { n: 0, done: false, live: false, fin: false };
+const myIdx = () => ROSTER.indexOf(me);
+const activeIdx = () => ROSTER.findIndex(n => !P(n).done);
+
+/* ---------- build ---------- */
+function build() {
+  const root = $("article");
+  WORDS.forEach((ws, i) => {
+    const s = document.createElement("section");
+    s.className = "sec"; s.dataset.i = i; s.id = "sec" + i;
+    const h = document.createElement("div"); h.className = "sec-head";
+    h.innerHTML = '<span>Section ' + (i + 1) + '</span><b></b><span class="state"></span>';
+    h.querySelector("b").textContent = ROSTER[i];
+    const p = document.createElement("p"); p.className = "txt";
+    ws.forEach((w, k) => {
+      const sp = document.createElement("span"); sp.className = "w"; sp.textContent = w;
+      p.appendChild(sp); p.appendChild(document.createTextNode(" "));
+    });
+    s.append(h, p); root.appendChild(s);
+  });
+  const sel = $("roster");
+  ROSTER.forEach((n, i) => {
+    const d = document.createElement("span"); d.className = "pill"; d.dataset.n = n;
+    d.style.setProperty("--c", "var(--c" + i + ")");
+    d.innerHTML = "<i></i><span></span>"; d.lastChild.textContent = n;
+    sel.appendChild(d);
+  });
+}
+
+/* ---------- paint ---------- */
+function paint() {
+  const act = activeIdx();
+  document.querySelectorAll(".sec").forEach(sec => {
+    const i = +sec.dataset.i, name = ROSTER[i], p = P(name);
+    sec.classList.toggle("active", i === act);
+    sec.classList.toggle("done", p.done);
+    const spans = sec.querySelectorAll(".w");
+    spans.forEach((sp, k) => {
+      sp.classList.toggle("read", k < p.n);
+      const lead = p.live ? +$("lead").value : 0;   // hides the ~0.3 s the speech engine needs to confirm a word
+      sp.classList.toggle("cur", i === act && !p.done && !p.fin && k === Math.min(p.n + lead, spans.length - 1));
+    });
+    const st = sec.querySelector(".state");
+    st.className = "state";
+    if (p.done) st.textContent = "Done";
+    else if (i === act && p.fin) st.textContent = "Finished reading";
+    else if (i === act && p.live) { st.textContent = name + " is reading"; st.classList.add("live"); }
+    else if (i === act && me === name) { st.textContent = "Your turn"; st.classList.add("turn"); }
+    else if (i === act) st.textContent = here.has(name) ? "Up next" : "Up next · " + name + " not here";
+    else st.textContent = "Waiting";
+  });
+  document.querySelectorAll(".pill").forEach(d => {
+    d.classList.toggle("here", here.has(d.dataset.n));
+    d.classList.toggle("me", d.dataset.n === me);
+  });
+  controls(act);
+  if (act !== lastActive) {
+    lastActive = act;
+    const el = $("sec" + (act < 0 ? 2 : act));
+    if (el && me) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  // Hand-off: when the turn reaches me and the microphone is already allowed, start listening on my own.
+  if (act !== lastAuto && act >= 0 && me && me !== "__listener" && act === myIdx() && !mode && !P(me).fin && micOk) {
+    lastAuto = act;
+    setTimeout(() => { if (!mode && activeIdx() === myIdx()) startMic(); }, 500);
+  }
+}
+
+function controls(act) {
+  const mic = $("btnMic"), sim = $("btnSim"), stop = $("btnStop"), msg = $("msg");
+  const live = mode !== null;
+  const mine = me && me !== "__listener" && act === myIdx();
+  const fin = act >= 0 && P(ROSTER[act]).fin;
+  const pass = $("btnPass");
+  mic.hidden = sim.hidden = !(mine && !live && !fin);
+  stop.hidden = !live;
+  pass.hidden = !(mine && (fin || live || P(me).n > 0));
+  pass.textContent = act === ROSTER.length - 1 ? "Finish article" : "Pass to " + (ROSTER[act + 1] || "") + " →";
+  pass.classList.toggle("primary", !!fin);
+  if (!me) msg.textContent = "Pick your name to join the reading.";
+  else if (act < 0) msg.textContent = "That's the whole article. Well read, everyone.";
+  else if (me === "__listener") msg.textContent = ROSTER[act] + " is up. Words light up as they are spoken.";
+  else if (mine && fin) msg.textContent = "Nicely read, " + me + ". Pass it on when you are ready.";
+  else if (fin) msg.textContent = ROSTER[act] + " finished reading and will pass it to " + (ROSTER[act + 1] || "the end") + ".";
+  else if (live) msg.textContent = "Reading… say the words in the highlight.";
+  else if (mine) msg.textContent = "Your turn, " + me + ". Start when you are ready.";
+  else msg.textContent = (P(ROSTER[act]).live ? ROSTER[act] + " is reading now." : "Waiting for " + ROSTER[act] + " to read section " + (act + 1) + ".");
+  if (!live && !$("sub").dataset.keep) $("sub").textContent = me ? "" : "No login. Choose a name and your section is yours.";
+}
+
+/* ---------- progress ---------- */
+function setMine(patch) {
+  if (myIdx() < 0) return;
+  prog[me] = Object.assign({}, P(me), patch);
+  const p = prog[me];
+  post("/progress", { name: me, n: p.n, done: p.done, live: p.live, fin: p.fin });
+  paint();
+}
+function advanceTo(n) {
+  const len = WORDS[myIdx()].length;
+  if (n >= len) { setMine({ n: len, fin: true, live: false }); stopReading(); return; }
+  if (n !== P(me).n) setMine({ n });
+}
+
+/* ---------- reading: simulated voice + real microphone ---------- */
+function note(t, keep) { const s = $("sub"); s.textContent = t; if (keep) s.dataset.keep = "1"; else delete s.dataset.keep; }
+
+function startSim() {
+  stopReading(true);
+  mode = "sim"; setMine({ live: true });
+  note("Demo voice: words advance at a natural speaking pace.", true);
+  timer = setInterval(() => {
+    const w = WORDS[myIdx()], n = P(me).n;
+    advanceTo(n + 1);
+  }, 360);
+  paint();
+}
+
+function startMic() { return $("engine").value === "chrome" ? startChrome() : startLocal(); }
+
+/* ---- private engine: Vosk speech model running in this browser, served by the local server ---- */
+let voskLoading = null, local = null;
+function loadVosk() {
+  if (!voskLoading) voskLoading = (async () => {
+    if (!window.Vosk) await new Promise((ok, bad) => {
+      const s = document.createElement("script"); s.src = "vendor/vosk.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s);
+    });
+    return await Vosk.createModel("vendor/model.tar.gz");
+  })().catch(e => { voskLoading = null; throw e; });
+  return voskLoading;
+}
+function feed(sp, from) {
+  const ws = WORDS[myIdx()]; let n = P(me).n;
+  for (let k = from; k < sp.length; k++) {
+    const reach = sp[k].length <= 2 ? 3 : 6;
+    for (let j = n; j < Math.min(n + reach, ws.length); j++) if (norm(ws[j]) === sp[k]) { n = j + 1; break; }
+  }
+  advanceTo(n);
+}
+function stopLocal() {
+  if (!local) return;
+  const l = local; local = null;
+  try { l.proc.disconnect(); l.src.disconnect(); } catch (_) {}
+  try { l.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+  try { l.ctx.close(); } catch (_) {}
+  try { l.recognizer.remove(); } catch (_) {}
+}
+async function startLocal() {
+  stopReading(true);
+  mode = "mic"; setMine({ live: true });
+  note("Loading the private speech model (first time takes a few seconds)…", true); paint();
+  const fail = msg => { stopReading(true); note(msg, true); paint(); };
+  let model;
+  try { model = await loadVosk(); } catch (e) { return fail("Could not load the speech model from the server."); }
+  if (mode !== "mic") return;
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+  } catch (e) { return fail("The microphone is blocked. Allow it in the browser, then press Start reading."); }
+  if (mode !== "mic") { stream.getTracks().forEach(t => t.stop()); return; }
+  const ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+  const recognizer = new model.KaldiRecognizer(16000);
+  const src = ctx.createMediaStreamSource(stream);
+  const proc = ctx.createScriptProcessor(2048, 1, 1);
+  const ratio = ctx.sampleRate / 16000;
+  proc.onaudioprocess = ev => {
+    const inp = ev.inputBuffer.getChannelData(0), len = Math.floor(inp.length / ratio), out = new Float32Array(len);
+    for (let i = 0; i < len; i++) {
+      const a = Math.floor(i * ratio), b = Math.min(inp.length, Math.floor((i + 1) * ratio)); let s = 0;
+      for (let k = a; k < b; k++) s += inp[k];
+      out[i] = s / ((b - a) || 1);
+    }
+    try { recognizer.acceptWaveformFloat(out, 16000); } catch (_) {}
+  };
+  let done = 0;
+  recognizer.on("partialresult", m => {
+    const sp = (m.result.partial || "").split(/\s+/).map(norm).filter(Boolean);
+    if (sp.length < done) done = sp.length;
+    note("Heard: " + sp.slice(-8).join(" "), true);
+    feed(sp, done); done = sp.length;
+  });
+  recognizer.on("result", m => {
+    const sp = (m.result.text || "").split(/\s+/).map(norm).filter(Boolean);
+    feed(sp, Math.min(done, sp.length)); done = 0;
+  });
+  src.connect(proc); proc.connect(ctx.destination);
+  local = { stream, ctx, proc, src, recognizer };
+  note("Listening (private, on this device)… read the highlighted words aloud.", true);
+}
+
+function startChrome() {
+  const SR =window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { note("Speech recognition is not available in this browser. Try Chrome, or press Demo voice.", true); return; }
+  stopReading(true);
+  rec = new SR(); rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
+  let done = 0, failed = false;
+  rec.onresult = e => {
+    let t = ""; for (let k = 0; k < e.results.length; k++) t += e.results[k][0].transcript + " ";
+    const sp = t.split(/\s+/).map(norm).filter(Boolean);
+    note("Heard: " + sp.slice(-8).join(" "), true);
+    if (sp.length < done) done = sp.length;
+    const ws = WORDS[myIdx()]; let n = P(me).n;
+    for (let k = done; k < sp.length; k++) {
+      const reach = sp[k].length <= 2 ? 3 : 6;
+      for (let j = n; j < Math.min(n + reach, ws.length); j++) {
+        if (norm(ws[j]) === sp[k]) { n = j + 1; break; }
+      }
+    }
+    done = sp.length;
+    advanceTo(n);
+  };
+  rec.onerror = e => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
+      failed = true;
+      clearTimeout(watch);
+      stopReading(true);
+      note("The microphone is blocked on this page, so nothing was heard and the highlight stays put. Open it as a regular web page, or press Demo voice.", true);
+      paint();
+    }
+  };
+  const watch = setTimeout(() => { if (mode === "mic" && done === 0) note("No voice heard yet. Check that the microphone is allowed, then read the highlighted word.", true); }, 8000);
+  rec.onend = () => { if (mode === "mic" && !failed) { try { rec.start(); done = 0; } catch (_) {} } };
+  try { rec.start(); mode = "mic"; setMine({ live: true }); note("Listening… read the highlighted words aloud.", true); paint(); }
+  catch (_) { startSim(); }
+}
+
+function stopReading(quiet) {
+  clearInterval(timer); timer = null;
+  stopLocal();
+  if (rec) { const r = rec; rec = null; r.onend = null; r.onerror = null; try { r.abort(); } catch (_) {} }
+  const was = mode; mode = null;
+  if (was && myIdx() >= 0 && P(me).live) setMine({ live: false });
+  if (!quiet) { delete $("sub").dataset.keep; paint(); }
+}
+
+/* ---------- reset ---------- */
+function resetAll() {
+  stopReading(true);
+  prog = {}; lastAuto = 0;
+  lastActive = -2; delete $("sub").dataset.keep; paint();
+}
+
+/* ---------- wiring ---------- */
+$("who").addEventListener("change", e => {
+  stopReading(true);
+  lastAuto = -2;
+  me =e.target.value || null;
+  connect();
+  if (myIdx() >= 0 && $("engine").value === "local") loadVosk().catch(() => {});
+  if (myIdx() >= 0) post("/progress", { name: me, n: P(me).n, done: P(me).done, live: false, fin: P(me).fin });
+  lastActive = -2; delete $("sub").dataset.keep; paint();
+});
+$("lead").addEventListener("change", paint);
+$("btnMic").addEventListener("click", async () => { if (await enableMic()) startMic(); });
+$("btnSim").addEventListener("click", startSim);
+$("btnStop").addEventListener("click", () => stopReading());
+$("btnPass").addEventListener("click", () => {
+  stopReading(true);
+  delete $("sub").dataset.keep;
+  setMine({ done: true, live: false });
+});
+$("btnReset").addEventListener("click", () => { if (SYNC) post("/reset", {}); else resetAll(); });
+
+/* ---------- microphone permission ---------- */
+function micState(state, sub) {
+  const c = $("micCard");
+  c.classList.toggle("on", state === "on");
+  c.classList.toggle("blocked", state === "blocked");
+  $("micTitle").textContent = state === "on" ? "Microphone is on" : state === "blocked" ? "Microphone is blocked here" : "Microphone is off";
+  if (sub) $("micSub").textContent = sub;
+  $("btnEnable").hidden = state === "on";
+}
+async function enableMic() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    micState("blocked", "This browser or preview does not allow microphone access. Open Relay Reading as a regular web page in Chrome.");
+    return false;
+  }
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    s.getTracks().forEach(t => t.stop());
+    micOk = true;
+    micState("on", "Ready. Press Start reading and say the highlighted words.");
+    return true;
+  } catch (e) {
+    micState("blocked", e && e.name === "NotAllowedError"
+      ? "Access was refused. Either the browser setting is off, or this preview does not pass the microphone through. Allow it in the address bar, or open the page outside the preview."
+      : "No microphone could be started on this device.");
+    return false;
+  }
+}
+$("btnEnable").addEventListener("click", enableMic);
+if (navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: "microphone" }).then(p => {
+    const sync = () => { if (p.state === "granted") micOk = true; if (p.state === "granted") micState("on", "Ready. Press Start reading and say the highlighted words."); };
+    sync(); p.onchange = sync;
+  }).catch(() => {});
+}
+
+build(); paint();
+
+/* ---------- shared state through the local server ---------- */
+let es = null, epoch = null;
+const SYNC = !location.hostname.endsWith("github.io");   // the hosted copy has no server, so it runs on one device
+function post(path, body) {
+  if (!SYNC) return;
+  fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
+}
+function connect() {
+  if (!SYNC) { here = new Set(myIdx() >= 0 ? [me] : []); paint(); return; }
+  if (es) es.close();
+  const nm = myIdx() >= 0 ? me : "";
+  es = new EventSource("/events?name=" + encodeURIComponent(nm));
+  es.onmessage = ev => {
+    const s = JSON.parse(ev.data);
+    if (epoch !== null && s.epoch !== epoch) { epoch = s.epoch; resetAll(); }
+    epoch = s.epoch;
+    here = new Set(s.here);
+    Object.keys(s.people).forEach(name => { if (name !== me) prog[name] = s.people[name]; });
+    paint();
+  };
+}
+connect();
+</script>
