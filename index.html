@@ -172,7 +172,7 @@ let room = null;
 let here = new Set();
 let mode = null;          // "mic" | "sim" | null
 let timer = null, rec = null;
-let lastActive = -2;
+let lastActive = -2, lastAuto = -2, micOk = false;
 
 const P = name => prog[name] || { n: 0, done: false, live: false, fin: false };
 const myIdx = () => ROSTER.indexOf(me);
@@ -233,6 +233,11 @@ function paint() {
     lastActive = act;
     const el = $("sec" + (act < 0 ? 2 : act));
     if (el && me) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  // Hand-off: when the turn reaches me and the microphone is already allowed, start listening on my own.
+  if (act !== lastAuto && act >= 0 && me && me !== "__listener" && act === myIdx() && !mode && !P(me).fin && micOk) {
+    lastAuto = act;
+    setTimeout(() => { if (!mode && activeIdx() === myIdx()) startMic(); }, 500);
   }
 }
 
@@ -333,7 +338,7 @@ function stopReading(quiet) {
 /* ---------- reset ---------- */
 function resetAll() {
   stopReading(true);
-  prog = {};
+  prog = {}; lastAuto = 0;
   if (myIdx() >= 0 && room) room.presence({ name: me, n: 0, done: false, live: false, fin: false }).catch(() => {});
   lastActive = -2; delete $("sub").dataset.keep; paint();
 }
@@ -341,6 +346,7 @@ function resetAll() {
 /* ---------- wiring ---------- */
 $("who").addEventListener("change", e => {
   stopReading(true);
+  lastAuto = -2;
   me = e.target.value || null;
   if (room) room.presence({ name: me && me !== "__listener" ? me : null, ...(myIdx() >= 0 ? { n: P(me).n, done: P(me).done, live: false, fin: P(me).fin } : {}) }).catch(() => {});
   if (me && me !== "__listener") here.add(me);
@@ -376,6 +382,7 @@ async function enableMic() {
   try {
     const s = await navigator.mediaDevices.getUserMedia({ audio: true });
     s.getTracks().forEach(t => t.stop());
+    micOk = true;
     micState("on", "Ready. Press Start reading and say the highlighted words.");
     return true;
   } catch (e) {
@@ -388,7 +395,7 @@ async function enableMic() {
 $("btnEnable").addEventListener("click", enableMic);
 if (navigator.permissions && navigator.permissions.query) {
   navigator.permissions.query({ name: "microphone" }).then(p => {
-    const sync = () => { if (p.state === "granted") micState("on", "Ready. Press Start reading and say the highlighted words."); };
+    const sync = () => { if (p.state === "granted") micOk = true; if (p.state === "granted") micState("on", "Ready. Press Start reading and say the highlighted words."); };
     sync(); p.onchange = sync;
   }).catch(() => {});
 }
