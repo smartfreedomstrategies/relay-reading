@@ -149,6 +149,7 @@ button.quiet { font-weight: 500; color: var(--muted); margin-left: auto; }
       <button class="primary" id="btnMic" hidden>Start reading</button>
       <button id="btnSim" hidden>Demo voice</button>
       <button id="btnStop" hidden>Stop</button>
+      <button id="btnPass" class="primary" hidden>Pass on</button>
       <button class="quiet" id="btnReset">Restart for everyone</button>
     </div>
   </div>
@@ -173,7 +174,7 @@ let mode = null;          // "mic" | "sim" | null
 let timer = null, rec = null;
 let lastActive = -2;
 
-const P = name => prog[name] || { n: 0, done: false, live: false };
+const P = name => prog[name] || { n: 0, done: false, live: false, fin: false };
 const myIdx = () => ROSTER.indexOf(me);
 const activeIdx = () => ROSTER.findIndex(n => !P(n).done);
 
@@ -212,11 +213,12 @@ function paint() {
     const spans = sec.querySelectorAll(".w");
     spans.forEach((sp, k) => {
       sp.classList.toggle("read", k < p.n);
-      sp.classList.toggle("cur", i === act && !p.done && k === p.n);
+      sp.classList.toggle("cur", i === act && !p.done && !p.fin && k === p.n);
     });
     const st = sec.querySelector(".state");
     st.className = "state";
     if (p.done) st.textContent = "Done";
+    else if (i === act && p.fin) st.textContent = "Finished reading";
     else if (i === act && p.live) { st.textContent = name + " is reading"; st.classList.add("live"); }
     else if (i === act && me === name) { st.textContent = "Your turn"; st.classList.add("turn"); }
     else if (i === act) st.textContent = here.has(name) ? "Up next" : "Up next · " + name + " not here";
@@ -238,11 +240,18 @@ function controls(act) {
   const mic = $("btnMic"), sim = $("btnSim"), stop = $("btnStop"), msg = $("msg");
   const live = mode !== null;
   const mine = me && me !== "__listener" && act === myIdx();
-  mic.hidden = sim.hidden = !(mine && !live);
+  const fin = act >= 0 && P(ROSTER[act]).fin;
+  const pass = $("btnPass");
+  mic.hidden = sim.hidden = !(mine && !live && !fin);
   stop.hidden = !live;
+  pass.hidden = !(mine && (fin || live || P(me).n > 0));
+  pass.textContent = act === ROSTER.length - 1 ? "Finish article" : "Pass to " + (ROSTER[act + 1] || "") + " →";
+  pass.classList.toggle("primary", !!fin);
   if (!me) msg.textContent = "Pick your name to join the reading.";
   else if (act < 0) msg.textContent = "That's the whole article. Well read, everyone.";
   else if (me === "__listener") msg.textContent = ROSTER[act] + " is up. Words light up as they are spoken.";
+  else if (mine && fin) msg.textContent = "Nicely read, " + me + ". Pass it on when you are ready.";
+  else if (fin) msg.textContent = ROSTER[act] + " finished reading and will pass it to " + (ROSTER[act + 1] || "the end") + ".";
   else if (live) msg.textContent = "Reading… say the words in the highlight.";
   else if (mine) msg.textContent = "Your turn, " + me + ". Start when you are ready.";
   else msg.textContent = (P(ROSTER[act]).live ? ROSTER[act] + " is reading now." : "Waiting for " + ROSTER[act] + " to read section " + (act + 1) + ".");
@@ -254,12 +263,12 @@ function setMine(patch) {
   if (myIdx() < 0) return;
   prog[me] = Object.assign({}, P(me), patch);
   const p = prog[me];
-  if (room) room.presence({ name: me, n: p.n, done: p.done, live: p.live }).catch(() => {});
+  if (room) room.presence({ name: me, n: p.n, done: p.done, live: p.live, fin: p.fin }).catch(() => {});
   paint();
 }
 function advanceTo(n) {
   const len = WORDS[myIdx()].length;
-  if (n >= len) { setMine({ n: len, done: true, live: false }); stopReading(); return; }
+  if (n >= len) { setMine({ n: len, fin: true, live: false }); stopReading(); return; }
   if (n !== P(me).n) setMine({ n });
 }
 
@@ -325,7 +334,7 @@ function stopReading(quiet) {
 function resetAll() {
   stopReading(true);
   prog = {};
-  if (myIdx() >= 0 && room) room.presence({ name: me, n: 0, done: false, live: false }).catch(() => {});
+  if (myIdx() >= 0 && room) room.presence({ name: me, n: 0, done: false, live: false, fin: false }).catch(() => {});
   lastActive = -2; delete $("sub").dataset.keep; paint();
 }
 
@@ -333,13 +342,18 @@ function resetAll() {
 $("who").addEventListener("change", e => {
   stopReading(true);
   me = e.target.value || null;
-  if (room) room.presence({ name: me && me !== "__listener" ? me : null, ...(myIdx() >= 0 ? { n: P(me).n, done: P(me).done, live: false } : {}) }).catch(() => {});
+  if (room) room.presence({ name: me && me !== "__listener" ? me : null, ...(myIdx() >= 0 ? { n: P(me).n, done: P(me).done, live: false, fin: P(me).fin } : {}) }).catch(() => {});
   if (me && me !== "__listener") here.add(me);
   lastActive = -2; delete $("sub").dataset.keep; paint();
 });
 $("btnMic").addEventListener("click", async () => { if (await enableMic()) startMic(); });
 $("btnSim").addEventListener("click", startSim);
 $("btnStop").addEventListener("click", () => stopReading());
+$("btnPass").addEventListener("click", () => {
+  stopReading(true);
+  delete $("sub").dataset.keep;
+  setMine({ done: true, live: false });
+});
 $("btnReset").addEventListener("click", () => {
   if (room) room.emit("reset", { at: Date.now() }).catch(() => {});
   resetAll();
@@ -391,7 +405,7 @@ build(); paint();
       if (!ROSTER.includes(nm)) return;
       here.add(nm);
       if (pr.isMe) return;
-      prog[nm] = { n: +pr.presence.n || 0, done: !!pr.presence.done, live: !!pr.presence.live };
+      prog[nm] = { n: +pr.presence.n || 0, done: !!pr.presence.done, live: !!pr.presence.live, fin: !!pr.presence.fin };
     });
     if (myIdx() >= 0) here.add(me);
     paint();
