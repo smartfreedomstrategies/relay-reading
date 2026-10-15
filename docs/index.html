@@ -16,6 +16,9 @@
   --c0: #0b7a89;
   --c1: #5148d4;
   --c2: #b02a6e;
+  --c3: #1f7a3a;
+  --c4: #a8480f;
+  --c5: #3b6ea5;
   --ok: #1f9d6b;
   --font-ui: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-read: "Newsreader", Georgia, "Times New Roman", serif;
@@ -24,14 +27,14 @@
   :root:not([data-theme="light"]) {
     --bg: #0e1514; --surface: #162120; --fg: #e6eeec; --muted: #8da29d; --line: #25332f;
     --mark: #f2c230; --mark-fg: #181200;
-    --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --ok: #46d19a;
+    --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --c3: #5fd08a; --c4: #f0a064; --c5: #7fb2ee; --ok: #46d19a;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e1514; --surface: #162120; --fg: #e6eeec; --muted: #8da29d; --line: #25332f;
   --mark: #f2c230; --mark-fg: #181200;
-  --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --ok: #46d19a;
+  --c0: #45c4d3; --c1: #9a93ff; --c2: #f07fb4; --c3: #5fd08a; --c4: #f0a064; --c5: #7fb2ee; --ok: #46d19a;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -60,7 +63,7 @@ header.top {
 select, button { font: inherit; }
 select {
   min-height: 42px; padding: 0 36px 0 12px; border-radius: 8px; border: 1px solid var(--line);
-  background: var(--surface); color: var(--fg); min-width: 200px;
+  background: var(--surface); color: var(--fg); min-width: 200px; max-width: 100%;
 }
 select:focus-visible, button:focus-visible { outline: 3px solid var(--c1); outline-offset: 2px; }
 
@@ -68,12 +71,13 @@ h1 { font-family: var(--font-read); font-weight: 500; font-size: clamp(30px, 6vw
 .byline { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 22px; }
 
 .sec { --c: var(--c0); display: grid; grid-template-columns: 1fr; gap: 8px; padding: 18px 0 20px 18px; border-left: 3px solid var(--line); opacity: .62; transition: opacity .3s, border-color .3s; }
-.sec[data-i="1"] { --c: var(--c1); }
-.sec[data-i="2"] { --c: var(--c2); }
 .sec.active { opacity: 1; border-left-color: var(--c); }
 .sec.done { opacity: .9; border-left-color: var(--c); }
+.sec.skip { opacity: .5; border-left-style: dashed; }
+.sec.skip .txt { font-size: clamp(17px, 3vw, 20px); }
 .sec-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .sec-head b { color: var(--c); font-weight: 700; }
+.sec.skip .sec-head b { color: var(--muted); }
 .state { margin-left: auto; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line); text-transform: none; letter-spacing: 0; font-size: 12px; background: var(--surface); }
 .state.live { border-color: var(--c); color: var(--c); font-weight: 700; }
 .state.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-right: 6px; animation: pulse 1.1s ease-in-out infinite; }
@@ -86,6 +90,19 @@ h1 { font-family: var(--font-read); font-weight: 500; font-size: clamp(30px, 6vw
 .w.read { color: var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); }
 .w.cur { background: var(--mark); color: var(--mark-fg); box-shadow: 0 0 0 3px var(--mark); }
 
+.editor { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); display: grid; gap: 16px; }
+.ed-row { display: grid; gap: 6px; min-width: 0; }
+.ed-row label, .ed-label { font-weight: 700; font-size: 13px; }
+input, textarea { font: inherit; width: 100%; min-width: 0; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+textarea { min-height: 280px; resize: vertical; font-family: var(--font-read); font-size: 17px; line-height: 1.5; }
+input:focus-visible, textarea:focus-visible { outline: 3px solid var(--c1); outline-offset: 1px; }
+.ed-note { margin: 0; color: var(--muted); font-size: 13px; }
+.ed-err { color: var(--c2); font-weight: 700; }
+.ed-split { display: grid; grid-template-columns: 1fr 140px auto; gap: 10px; align-items: end; }
+@media (max-width: 560px) { .ed-split { grid-template-columns: 1fr; } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; }
+.chip { --c: var(--muted); display: inline-flex; gap: 6px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--c); color: var(--c); font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--c) 10%, transparent); }
+.chip.none { border-style: dashed; font-weight: 500; }
 .mic { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--mark); border-radius: 8px; background: var(--surface); }
 .mic > div { min-width: 0; flex: 1 1 240px; }
 .mic-sub { color: var(--muted); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
@@ -119,13 +136,42 @@ button.quiet { font-weight: 500; color: var(--muted); margin-left: auto; }
 <main class="wrap">
   <div class="join">
     <label for="who">Who are you?</label>
-    <select id="who">
-      <option value="">Choose your name…</option>
-      <option value="Ava">Ava (section 1)</option>
-      <option value="Ben">Ben (section 2)</option>
-      <option value="Cleo">Cleo (section 3)</option>
-      <option value="__listener">Just listening</option>
-    </select>
+    <select id="who"></select>
+    <button id="btnEdit" type="button">Edit text and readers</button>
+  </div>
+
+  <div class="editor" id="editor" hidden>
+    <div class="ed-row">
+      <label for="edTitle">Title</label>
+      <input id="edTitle" maxlength="80" autocomplete="off">
+    </div>
+    <div class="ed-row">
+      <label for="edFile">Load a document (.docx, .txt or .md)</label>
+      <input id="edFile" type="file" accept=".docx,.doc,.txt,.md,.markdown,text/plain">
+      <p class="ed-note" id="edFileMsg">The file is read on this device. Nothing is uploaded anywhere.</p>
+    </div>
+    <div class="ed-row">
+      <label for="edSource">Text and readers</label>
+      <textarea id="edSource" spellcheck="false" placeholder="@Ava&#10;The first part, read by Ava.&#10;&#10;@Ben&#10;The second part, read by Ben.&#10;&#10;@none&#10;A caption that nobody reads aloud."></textarea>
+      <p class="ed-note">Put <b>@Name</b> on its own line before the part that person reads. The same name can come back later. <b>@none</b> marks text nobody reads aloud.</p>
+    </div>
+    <div class="ed-split">
+      <div class="ed-row"><label for="edReaders">Readers, separated by commas</label><input id="edReaders" autocomplete="off" placeholder="Ava, Ben, Cleo"></div>
+      <div class="ed-row"><label for="edWords">Words per section</label><input id="edWords" type="number" min="30" max="400" value="120"></div>
+      <button id="edSplit" type="button">Split and assign</button>
+    </div>
+    <p class="ed-note">Split and assign ignores existing @ lines. It cuts the text into sections of about that many words and gives them to the readers in turn.</p>
+    <div class="ed-row">
+      <div class="ed-label">Preview</div>
+      <div class="chips" id="edPreview"></div>
+      <p class="ed-note" id="edSummary"></p>
+    </div>
+    <p class="ed-note">Saving restarts the reading for everyone who has the page open.</p>
+    <div class="btns">
+      <button class="primary" id="edSave" type="button">Save</button>
+      <button id="edCancel" type="button">Cancel</button>
+      <span class="ed-err" id="edErr" role="alert"></span>
+    </div>
   </div>
 
   <div class="mic" id="micCard">
@@ -148,8 +194,8 @@ button.quiet { font-weight: 500; color: var(--muted); margin-left: auto; }
     <button id="btnEnable" class="primary">Enable microphone</button>
   </div>
 
-  <h1>Why We Read Aloud</h1>
-  <p class="byline">Three readers · three sections · one voice at a time</p>
+  <h1 id="title">Why We Read Aloud</h1>
+  <p class="byline" id="byline"></p>
   <div id="article"></div>
 </main>
 
@@ -168,74 +214,108 @@ button.quiet { font-weight: 500; color: var(--muted); margin-left: auto; }
 </div>
 
 <script>
-const ROSTER = ["Ava", "Ben", "Cleo"];
-const TEXT = [
-  "Long before printing presses, stories travelled by voice. A reader would stand before a room and give the words their rhythm, their pauses, their weight. Everyone listened, and for a while the room felt like one mind.",
-  "Today we read alone, in silence, on glowing screens. The words arrive faster than ever, yet something is missing. A sentence read aloud slows down, and slowing down is how ideas finally sink in.",
-  "So pass the page around. One person starts, the next takes over where the last voice fades, and the whole article becomes something you made together. Take a breath, and begin reading."
-];
-const WORDS = TEXT.map(t => t.split(/\s+/));
+/* ---------- the document: a title and sections, each with a reader ("" = not read aloud) ---------- */
+const DEFAULT_CFG = {
+  title: "Why We Read Aloud",
+  sections: [
+    { reader: "Ava", text: "Long before printing presses, stories travelled by voice. A reader would stand before a room and give the words their rhythm, their pauses, their weight. Everyone listened, and for a while the room felt like one mind." },
+    { reader: "Ben", text: "Today we read alone, in silence, on glowing screens. The words arrive faster than ever, yet something is missing. A sentence read aloud slows down, and slowing down is how ideas finally sink in." },
+    { reader: "Cleo", text: "So pass the page around. One person starts, the next takes over where the last voice fades, and the whole article becomes something you made together. Take a breath, and begin reading." }
+  ]
+};
+function normCfg(c) {   // also accepts the older {names, texts} shape
+  if (c && !c.sections && c.names && c.texts) return { title: c.title, sections: c.names.map((n, i) => ({ reader: n, text: c.texts[i] })) };
+  return c;
+}
+let CFG, SECS, WORDS, ROSTER;
+function setCfg(c) {
+  CFG = c; SECS = c.sections;
+  WORDS = SECS.map(s => s.text.trim().split(/\s+/));
+  ROSTER = [...new Set(SECS.map(s => s.reader).filter(Boolean))];
+}
+setCfg(DEFAULT_CFG);
+const HOSTED = location.hostname.endsWith("github.io");   // no server: edits stay in this browser
+if (HOSTED) { try { const j = normCfg(JSON.parse(localStorage.getItem("rr-config"))); if (j && Array.isArray(j.sections) && j.sections.length) setCfg(j); } catch (_) {} }
 const norm = w => w.toLowerCase().replace(/[^a-z0-9']/g, "");
 const $ = id => document.getElementById(id);
+const colorOf = name => "var(--c" + (Math.max(0, ROSTER.indexOf(name)) % 6) + ")";
 
-let me = null;            // "Ava" | "Ben" | "Cleo" | "__listener" | null
-let prog = {};            // name -> {n, done, live}
-let room = null;
+let me = null;            // a reader's name, "__listener", or null
+let prog = {};            // section index -> {n, done, live, fin}
 let here = new Set();
 let mode = null;          // "mic" | "sim" | null
+let cur = -1;             // the section I am reading right now
 let timer = null, rec = null;
 let lastActive = -2, lastAuto = -2, micOk = false;
 
-const P = name => prog[name] || { n: 0, done: false, live: false, fin: false };
-const myIdx = () => ROSTER.indexOf(me);
-const activeIdx = () => ROSTER.findIndex(n => !P(n).done);
+const P = i => prog[i] || { n: 0, done: false, live: false, fin: false };
+const activeIdx = () => SECS.findIndex((s, i) => s.reader && !P(i).done);
+const mineAct = () => { const a = activeIdx(); return a >= 0 && me && me !== "__listener" && SECS[a].reader === me ? a : -1; };
+const nextReaderSec = a => SECS.findIndex((s, i) => i > a && s.reader && !P(i).done);
 
 /* ---------- build ---------- */
 function build() {
   const root = $("article");
-  WORDS.forEach((ws, i) => {
+  root.innerHTML = ""; $("roster").innerHTML = "";
+  $("title").textContent = CFG.title;
+  document.title = CFG.title + " · Relay Reading";
+  $("byline").textContent = ROSTER.length + (ROSTER.length === 1 ? " reader" : " readers") + " · " + SECS.length + (SECS.length === 1 ? " section" : " sections") + " · one voice at a time";
+  const who = $("who");
+  who.innerHTML = "";
+  const opt = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; who.appendChild(o); };
+  opt("", "Choose your name…");
+  ROSTER.forEach(n => { const k = SECS.filter(s => s.reader === n).length; opt(n, n + (k > 1 ? " (" + k + " sections)" : "")); });
+  opt("__listener", "Just listening");
+  who.value = me || "";
+  SECS.forEach((sc, i) => {
     const s = document.createElement("section");
-    s.className = "sec"; s.dataset.i = i; s.id = "sec" + i;
+    s.className = "sec" + (sc.reader ? "" : " skip"); s.dataset.i = i; s.id = "sec" + i;
+    if (sc.reader) s.style.setProperty("--c", colorOf(sc.reader));
     const h = document.createElement("div"); h.className = "sec-head";
     h.innerHTML = '<span>Section ' + (i + 1) + '</span><b></b><span class="state"></span>';
-    h.querySelector("b").textContent = ROSTER[i];
+    h.querySelector("b").textContent = sc.reader || "No reader";
     const p = document.createElement("p"); p.className = "txt";
-    ws.forEach((w, k) => {
+    WORDS[i].forEach(w => {
       const sp = document.createElement("span"); sp.className = "w"; sp.textContent = w;
       p.appendChild(sp); p.appendChild(document.createTextNode(" "));
     });
     s.append(h, p); root.appendChild(s);
   });
-  const sel = $("roster");
-  ROSTER.forEach((n, i) => {
+  ROSTER.forEach(n => {
     const d = document.createElement("span"); d.className = "pill"; d.dataset.n = n;
-    d.style.setProperty("--c", "var(--c" + i + ")");
+    d.style.setProperty("--c", colorOf(n));
     d.innerHTML = "<i></i><span></span>"; d.lastChild.textContent = n;
-    sel.appendChild(d);
+    $("roster").appendChild(d);
   });
 }
 
 /* ---------- paint ---------- */
 function paint() {
   const act = activeIdx();
+  const lead = +$("lead").value;   // hides the ~0.3 s the speech engine needs to confirm a word
   document.querySelectorAll(".sec").forEach(sec => {
-    const i = +sec.dataset.i, name = ROSTER[i], p = P(name);
+    const i = +sec.dataset.i, name = SECS[i].reader, p = P(i);
+    let label, cls = "state";
+    if (!name) label = "Not read aloud";
+    else if (p.done) label = "Done";
+    else if (i === act && p.fin) label = "Finished reading";
+    else if (i === act && p.live) { label = name + " is reading"; cls += " live"; }
+    else if (i === act && me === name) { label = "Your turn"; cls += " turn"; }
+    else if (i === act) label = here.has(name) ? "Up next" : "Up next · " + name + " not here";
+    else label = "Waiting";
+    const key = [p.n, p.done, p.live, p.fin, i === act, label, p.live ? lead : 0].join("|");
+    if (sec._k === key) return;          // long documents: only touch sections that changed
+    sec._k = key;
     sec.classList.toggle("active", i === act);
-    sec.classList.toggle("done", p.done);
+    sec.classList.toggle("done", !!name && p.done);
     const spans = sec.querySelectorAll(".w");
+    const l = p.live ? lead : 0;
     spans.forEach((sp, k) => {
-      sp.classList.toggle("read", k < p.n);
-      const lead = p.live ? +$("lead").value : 0;   // hides the ~0.3 s the speech engine needs to confirm a word
-      sp.classList.toggle("cur", i === act && !p.done && !p.fin && k === Math.min(p.n + lead, spans.length - 1));
+      sp.classList.toggle("read", !!name && k < p.n);
+      sp.classList.toggle("cur", i === act && !p.done && !p.fin && k === Math.min(p.n + l, spans.length - 1));
     });
     const st = sec.querySelector(".state");
-    st.className = "state";
-    if (p.done) st.textContent = "Done";
-    else if (i === act && p.fin) st.textContent = "Finished reading";
-    else if (i === act && p.live) { st.textContent = name + " is reading"; st.classList.add("live"); }
-    else if (i === act && me === name) { st.textContent = "Your turn"; st.classList.add("turn"); }
-    else if (i === act) st.textContent = here.has(name) ? "Up next" : "Up next · " + name + " not here";
-    else st.textContent = "Waiting";
+    st.className = cls; st.textContent = label;
   });
   document.querySelectorAll(".pill").forEach(d => {
     d.classList.toggle("here", here.has(d.dataset.n));
@@ -244,50 +324,54 @@ function paint() {
   controls(act);
   if (act !== lastActive) {
     lastActive = act;
-    const el = $("sec" + (act < 0 ? 2 : act));
+    const el = $("sec" + (act < 0 ? SECS.length - 1 : act));
     if (el && me) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   // Hand-off: when the turn reaches me and the microphone is already allowed, start listening on my own.
-  if (act !== lastAuto && act >= 0 && me && me !== "__listener" && act === myIdx() && !mode && !P(me).fin && micOk) {
+  if (act !== lastAuto && act >= 0 && mineAct() === act && !mode && !P(act).fin && micOk) {
     lastAuto = act;
-    setTimeout(() => { if (!mode && activeIdx() === myIdx()) startMic(); }, 500);
+    setTimeout(() => { if (!mode && mineAct() === act) startMic(); }, 500);
   }
 }
 
 function controls(act) {
   const mic = $("btnMic"), sim = $("btnSim"), stop = $("btnStop"), msg = $("msg");
   const live = mode !== null;
-  const mine = me && me !== "__listener" && act === myIdx();
-  const fin = act >= 0 && P(ROSTER[act]).fin;
+  const mine = act >= 0 && mineAct() === act;
+  const fin = act >= 0 && P(act).fin;
   const pass = $("btnPass");
+  const nxt = act >= 0 ? nextReaderSec(act) : -1;
+  const who = act >= 0 ? SECS[act].reader : "";
   mic.hidden = sim.hidden = !(mine && !live && !fin);
   stop.hidden = !live;
-  pass.hidden = !(mine && (fin || live || P(me).n > 0));
-  pass.textContent = act === ROSTER.length - 1 ? "Finish article" : "Pass to " + (ROSTER[act + 1] || "") + " →";
+  pass.hidden = !(mine && (fin || live || P(act).n > 0));
+  pass.textContent = nxt < 0 ? "Finish article" : "Pass to " + SECS[nxt].reader + " →";
   pass.classList.toggle("primary", !!fin);
   if (!me) msg.textContent = "Pick your name to join the reading.";
   else if (act < 0) msg.textContent = "That's the whole article. Well read, everyone.";
-  else if (me === "__listener") msg.textContent = ROSTER[act] + " is up. Words light up as they are spoken.";
+  else if (me === "__listener") msg.textContent = who + " is up. Words light up as they are spoken.";
   else if (mine && fin) msg.textContent = "Nicely read, " + me + ". Pass it on when you are ready.";
-  else if (fin) msg.textContent = ROSTER[act] + " finished reading and will pass it to " + (ROSTER[act + 1] || "the end") + ".";
+  else if (fin) msg.textContent = who + " finished reading and will pass it to " + (nxt < 0 ? "the end" : SECS[nxt].reader) + ".";
   else if (live) msg.textContent = "Reading… say the words in the highlight.";
   else if (mine) msg.textContent = "Your turn, " + me + ". Start when you are ready.";
-  else msg.textContent = (P(ROSTER[act]).live ? ROSTER[act] + " is reading now." : "Waiting for " + ROSTER[act] + " to read section " + (act + 1) + ".");
-  if (!live && !$("sub").dataset.keep) $("sub").textContent = me ? "" : "No login. Choose a name and your section is yours.";
+  else msg.textContent = P(act).live ? who + " is reading now." : "Waiting for " + who + " to read section " + (act + 1) + ".";
+  if (!live && !$("sub").dataset.keep) $("sub").textContent = me ? "" : "No login. Choose a name and your sections are yours.";
 }
 
 /* ---------- progress ---------- */
-function setMine(patch) {
-  if (myIdx() < 0) return;
-  prog[me] = Object.assign({}, P(me), patch);
-  const p = prog[me];
-  post("/progress", { name: me, n: p.n, done: p.done, live: p.live, fin: p.fin });
+function setMine(patch, i) {
+  if (i === undefined) i = cur >= 0 ? cur : mineAct();
+  if (i < 0) return;
+  prog[i] = Object.assign({}, P(i), patch);
+  const p = prog[i];
+  post("/progress", { sec: i, n: p.n, done: p.done, live: p.live, fin: p.fin });
   paint();
 }
 function advanceTo(n) {
-  const len = WORDS[myIdx()].length;
+  if (cur < 0) return;
+  const len = WORDS[cur].length;
   if (n >= len) { setMine({ n: len, fin: true, live: false }); stopReading(); return; }
-  if (n !== P(me).n) setMine({ n });
+  if (n !== P(cur).n) setMine({ n });
 }
 
 /* ---------- reading: simulated voice + real microphone ---------- */
@@ -295,31 +379,31 @@ function note(t, keep) { const s = $("sub"); s.textContent = t; if (keep) s.data
 
 function startSim() {
   stopReading(true);
+  cur = mineAct(); if (cur < 0) return;
   mode = "sim"; setMine({ live: true });
   note("Demo voice: words advance at a natural speaking pace.", true);
-  timer = setInterval(() => {
-    const w = WORDS[myIdx()], n = P(me).n;
-    advanceTo(n + 1);
-  }, 360);
+  timer = setInterval(() => { if (cur >= 0) advanceTo(P(cur).n + 1); }, 360);
   paint();
 }
 
-function startMic() { return $("engine").value === "chrome" ? startChrome() : startLocal(); }
+function startMic() { if (mineAct() < 0) return; return $("engine").value === "chrome" ? startChrome() : startLocal(); }
 
 /* ---- private engine: Vosk speech model running in this browser, served by the local server ---- */
 let voskLoading = null, local = null;
+function loadScript(src) {
+  return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+}
 function loadVosk() {
   if (!voskLoading) voskLoading = (async () => {
-    if (!window.Vosk) await new Promise((ok, bad) => {
-      const s = document.createElement("script"); s.src = "vendor/vosk.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s);
-    });
+    if (!window.Vosk) await loadScript("vendor/vosk.js");
     // The engine fetches the model from a worker, so it needs a full address, not a relative path.
     return await Vosk.createModel(new URL("vendor/model.tar.gz", location.href).href);
   })().catch(e => { voskLoading = null; throw e; });
   return voskLoading;
 }
 function feed(sp, from) {
-  const ws = WORDS[myIdx()]; let n = P(me).n;
+  if (cur < 0) return;
+  const ws = WORDS[cur]; let n = P(cur).n;
   for (let k = from; k < sp.length; k++) {
     const reach = sp[k].length <= 2 ? 3 : 6;
     for (let j = n; j < Math.min(n + reach, ws.length); j++) if (norm(ws[j]) === sp[k]) { n = j + 1; break; }
@@ -336,6 +420,7 @@ function stopLocal() {
 }
 async function startLocal() {
   stopReading(true);
+  cur = mineAct(); if (cur < 0) return;
   mode = "mic"; setMine({ live: true });
   note("Loading the private speech model (first time takes a few seconds)…", true); paint();
   const fail = msg => { stopReading(true); note(msg, true); paint(); };
@@ -378,9 +463,10 @@ async function startLocal() {
 }
 
 function startChrome() {
-  const SR =window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { note("Speech recognition is not available in this browser. Try Chrome, or press Demo voice.", true); return; }
   stopReading(true);
+  cur = mineAct(); if (cur < 0) return;
   rec = new SR(); rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
   let done = 0, failed = false;
   rec.onresult = e => {
@@ -388,15 +474,7 @@ function startChrome() {
     const sp = t.split(/\s+/).map(norm).filter(Boolean);
     note("Heard: " + sp.slice(-8).join(" "), true);
     if (sp.length < done) done = sp.length;
-    const ws = WORDS[myIdx()]; let n = P(me).n;
-    for (let k = done; k < sp.length; k++) {
-      const reach = sp[k].length <= 2 ? 3 : 6;
-      for (let j = n; j < Math.min(n + reach, ws.length); j++) {
-        if (norm(ws[j]) === sp[k]) { n = j + 1; break; }
-      }
-    }
-    done = sp.length;
-    advanceTo(n);
+    feed(sp, done); done = sp.length;
   };
   rec.onerror = e => {
     if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
@@ -418,7 +496,8 @@ function stopReading(quiet) {
   stopLocal();
   if (rec) { const r = rec; rec = null; r.onend = null; r.onerror = null; try { r.abort(); } catch (_) {} }
   const was = mode; mode = null;
-  if (was && myIdx() >= 0 && P(me).live) setMine({ live: false });
+  const i = cur; cur = -1;
+  if (was && i >= 0 && P(i).live) setMine({ live: false }, i);
   if (!quiet) { delete $("sub").dataset.keep; paint(); }
 }
 
@@ -433,10 +512,9 @@ function resetAll() {
 $("who").addEventListener("change", e => {
   stopReading(true);
   lastAuto = -2;
-  me =e.target.value || null;
+  me = e.target.value || null;
   connect();
-  if (myIdx() >= 0 && $("engine").value === "local") loadVosk().catch(() => {});
-  if (myIdx() >= 0) post("/progress", { name: me, n: P(me).n, done: P(me).done, live: false, fin: P(me).fin });
+  if (ROSTER.includes(me) && $("engine").value === "local") loadVosk().catch(() => {});
   lastActive = -2; delete $("sub").dataset.keep; paint();
 });
 $("lead").addEventListener("change", paint);
@@ -444,9 +522,10 @@ $("btnMic").addEventListener("click", async () => { if (await enableMic()) start
 $("btnSim").addEventListener("click", startSim);
 $("btnStop").addEventListener("click", () => stopReading());
 $("btnPass").addEventListener("click", () => {
+  const i = mineAct(); if (i < 0) return;
   stopReading(true);
   delete $("sub").dataset.keep;
-  setMine({ done: true, live: false });
+  setMine({ done: true, live: false }, i);
 });
 $("btnReset").addEventListener("click", () => { if (SYNC) post("/reset", {}); else resetAll(); });
 
@@ -480,7 +559,7 @@ async function enableMic() {
 $("btnEnable").addEventListener("click", enableMic);
 if (navigator.permissions && navigator.permissions.query) {
   navigator.permissions.query({ name: "microphone" }).then(p => {
-    const sync = () => { if (p.state === "granted") micOk = true; if (p.state === "granted") micState("on", "Ready. Press Start reading and say the highlighted words."); };
+    const sync = () => { if (p.state === "granted") { micOk = true; micState("on", "Ready. Press Start reading and say the highlighted words."); } };
     sync(); p.onchange = sync;
   }).catch(() => {});
 }
@@ -495,18 +574,142 @@ function post(path, body) {
   fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
 }
 function connect() {
-  if (!SYNC) { here = new Set(myIdx() >= 0 ? [me] : []); paint(); return; }
+  if (!SYNC) { here = new Set(ROSTER.includes(me) ? [me] : []); paint(); return; }
   if (es) es.close();
-  const nm = myIdx() >= 0 ? me : "";
+  const nm = ROSTER.includes(me) ? me : "";
   es = new EventSource("/events?name=" + encodeURIComponent(nm));
   es.onmessage = ev => {
     const s = JSON.parse(ev.data);
+    if (s.config) applyConfig(s.config);
     if (epoch !== null && s.epoch !== epoch) { epoch = s.epoch; resetAll(); }
     epoch = s.epoch;
     here = new Set(s.here);
-    Object.keys(s.people).forEach(name => { if (name !== me) prog[name] = s.people[name]; });
+    Object.keys(s.people).forEach(k => { if (+k !== cur) prog[k] = s.people[k]; });
     paint();
   };
 }
 connect();
+
+/* ---------- editing: text with @Name lines, document upload, split and assign ---------- */
+function applyConfig(c) {
+  c = normCfg(c);
+  if (JSON.stringify(c) === JSON.stringify(CFG)) return;
+  const had = me;
+  stopReading(true);
+  setCfg(c);
+  if (me && me !== "__listener" && !ROSTER.includes(me)) me = null;
+  prog = {}; lastActive = -2; lastAuto = -2;
+  build(); paint();
+  if (me !== had && SYNC) connect();
+}
+
+const MARK = /^\s*@(\S(?:.{0,18}\S)?)\s*$/;
+const NONE = /^(none|skip|nobody|no one)$/i;
+const squash = s => s.replace(/\s+/g, " ").trim();
+const wordCount = t => (t.trim() ? t.trim().split(/\s+/).length : 0);
+
+function parseSource(src) {
+  const secs = []; let reader = "", buf = [];
+  const flush = () => { const t = squash(buf.join(" ")); if (t) secs.push({ reader, text: t }); buf = []; };
+  src.split(/\r?\n/).forEach(line => {
+    const m = line.match(MARK);
+    if (m) { flush(); reader = NONE.test(m[1]) ? "" : squash(m[1]); } else buf.push(line);
+  });
+  flush();
+  const seen = {};   // "ava" and "Ava" are the same reader; the first spelling wins
+  secs.forEach(s => { if (s.reader) s.reader = seen[s.reader.toLowerCase()] || (seen[s.reader.toLowerCase()] = s.reader); });
+  return secs;
+}
+function toSource(cfg) { return cfg.sections.map(s => "@" + (s.reader || "none") + "\n" + s.text).join("\n\n"); }
+
+function paragraphsOf(src) {
+  const paras = []; let buf = [];
+  const flush = () => { const t = squash(buf.join(" ")); if (t) paras.push(t); buf = []; };
+  src.split(/\r?\n/).forEach(line => { if (MARK.test(line)) return; if (!line.trim()) flush(); else buf.push(line); });
+  flush();
+  return paras;
+}
+function splitAssign(src, readers, per) {
+  const pieces = [];
+  paragraphsOf(src).forEach(p => {
+    if (wordCount(p) <= per * 2) { pieces.push(p); return; }
+    let group = [], c = 0;                       // a very long paragraph is cut at sentence ends
+    p.split(/(?<=[.!?])\s+/).forEach(s => { group.push(s); c += wordCount(s); if (c >= per) { pieces.push(group.join(" ")); group = []; c = 0; } });
+    if (group.length) pieces.push(group.join(" "));
+  });
+  const groups = []; let g = [], c = 0;
+  pieces.forEach(p => { g.push(p); c += wordCount(p); if (c >= per) { groups.push(g); g = []; c = 0; } });
+  if (g.length) { if (groups.length && c < per / 2) groups[groups.length - 1].push(...g); else groups.push(g); }
+  return groups.map((grp, i) => "@" + readers[i % readers.length] + "\n" + grp.join("\n\n")).join("\n\n");
+}
+
+function renderPreview() {
+  const secs = parseSource($("edSource").value), box = $("edPreview");
+  box.innerHTML = "";
+  const names = [...new Set(secs.map(s => s.reader).filter(Boolean))];
+  secs.forEach((s, i) => {
+    const c = document.createElement("span"); c.className = "chip" + (s.reader ? "" : " none");
+    if (s.reader) c.style.setProperty("--c", "var(--c" + (names.indexOf(s.reader) % 6) + ")");
+    c.textContent = (i + 1) + " · " + (s.reader || "No reader") + " · " + wordCount(s.text) + " words";
+    box.appendChild(c);
+  });
+  const total = secs.reduce((a, s) => a + wordCount(s.text), 0), long = secs.findIndex(s => wordCount(s.text) > 400);
+  $("edSummary").textContent = !secs.length ? "Nothing yet. Paste text, load a document, or write @Name lines."
+    : secs.length + " sections · " + names.length + " readers · " + total + " words" + (long >= 0 ? ". Section " + (long + 1) + " is long, so think about splitting it." : "") + (!names.length ? ". Add at least one @Name line." : "");
+}
+function openEditor() {
+  $("edTitle").value = CFG.title;
+  $("edSource").value = toSource(CFG);
+  $("edReaders").value = ROSTER.join(", ");
+  $("edFile").value = ""; $("edFileMsg").textContent = "The file is read on this device. Nothing is uploaded anywhere.";
+  $("edErr").textContent = ""; $("editor").hidden = false;
+  renderPreview(); $("edTitle").focus();
+}
+async function loadDocument(file) {
+  const msg = $("edFileMsg"), ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (ext === "doc") { msg.textContent = "Old .doc files cannot be read here. Open it in Word or Google Docs, save it as .docx, and load that."; return; }
+  if (file.size > 5e6) { msg.textContent = "That file is over 5 MB. Try a shorter document."; return; }
+  try {
+    let text;
+    if (ext === "docx") {
+      msg.textContent = "Reading the document…";
+      if (!window.mammoth) await loadScript("vendor/mammoth.browser.min.js");
+      text = (await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })).value;
+    } else if (["txt", "md", "markdown", ""].includes(ext)) {
+      text = (await file.text()).replace(/^#{1,6}\s+/gm, "");
+    } else { msg.textContent = "Use a .docx, .txt or .md file."; return; }
+    text = text.replace(/\r/g, "").trim();
+    if (!text) { msg.textContent = "That document has no text in it."; return; }
+    $("edSource").value = text;
+    $("edTitle").value = file.name.replace(/\.[^.]+$/, "").slice(0, 80);
+    msg.textContent = "Loaded " + wordCount(text) + " words. Add @Name lines, or set the readers below and press Split and assign.";
+    renderPreview();
+  } catch (e) { msg.textContent = "Could not read that file. " + (e && e.message ? e.message : ""); }
+}
+function saveEditor() {
+  const secs = parseSource($("edSource").value);
+  const err = !secs.length ? "There is no text to read."
+    : !secs.some(s => s.reader) ? "Give at least one part to a reader with an @Name line."
+    : secs.length > 300 ? "That is " + secs.length + " sections. The limit is 300, so use fewer, longer sections."
+    : secs.some(s => s.text.length > 5000) ? "Section " + (secs.findIndex(s => s.text.length > 5000) + 1) + " is too long. Add @Name lines or use Split and assign."
+    : secs.reduce((a, s) => a + s.text.length, 0) > 300000 ? "The whole text is over 300,000 characters. Use a shorter document." : "";
+  if (err) { $("edErr").textContent = err; return; }
+  const c = { title: squash($("edTitle").value) || "Untitled reading", sections: secs };
+  $("editor").hidden = true;
+  if (SYNC) post("/config", c);
+  else { try { localStorage.setItem("rr-config", JSON.stringify(c)); } catch (_) {} applyConfig(c); resetAll(); }
+}
+$("btnEdit").addEventListener("click", () => { if ($("editor").hidden) openEditor(); else $("editor").hidden = true; });
+$("edSource").addEventListener("input", renderPreview);
+$("edFile").addEventListener("change", e => { if (e.target.files[0]) loadDocument(e.target.files[0]); });
+$("edSplit").addEventListener("click", () => {
+  const rs = [...new Set($("edReaders").value.split(",").map(squash).filter(n => n && n.length <= 20 && !n.startsWith("__")))];
+  if (!rs.length) { $("edErr").textContent = "Type at least one reader name above, separated by commas."; return; }
+  const per = Math.max(30, Math.min(400, +$("edWords").value || 120));
+  $("edErr").textContent = "";
+  $("edSource").value = splitAssign($("edSource").value, rs, per);
+  renderPreview();
+});
+$("edSave").addEventListener("click", saveEditor);
+$("edCancel").addEventListener("click", () => { $("editor").hidden = true; });
 </script>

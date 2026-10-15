@@ -1,2 +1,3 @@
 local/certs/
+local/config.json
 .DS_Store
